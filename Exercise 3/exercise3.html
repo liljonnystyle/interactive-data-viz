@@ -1,0 +1,85 @@
+<head>
+    <script src="d3.min.js"></script>
+    <style>
+        body {
+            font-family: Futura;
+        }
+        .pair {
+            border: 1px solid #000;
+            margin: 10px;
+            display: inline-block;
+            padding: 10px;
+            float: left;
+        }
+    	.button {
+    		padding: 20px;
+    		background-color: black;
+    		color: white;
+    		display: inline-block;
+    		margin: 5px;
+            cursor: pointer;
+    	}
+    	.button:hover {
+    		background-color: #ff9900;
+    	}
+    	.button.selected {
+    		background-color: #ff0099;
+    	}
+        .triangle {
+            padding: 9px 10px 8px;
+        }
+        .triangle .button {
+            background-color: transparent;
+            padding: 0;
+        }
+        .triangle .button:nth-child(odd) {
+            width: 0;
+            height: 0;
+            border-top: 30px solid transparent;
+            border-right: 60px solid #ff0099;
+            border-bottom: 30px solid transparent;
+        }
+        .triangle .button:nth-child(even) {
+            width: 0;
+            height: 0;
+            border-top: 30px solid transparent;
+            border-left: 60px solid #ff0099;
+            border-bottom: 30px solid transparent;
+        }
+        .triangle .button:nth-child(odd):hover {
+            border-right-color: #ff9900;
+        }
+        .triangle .button:nth-child(even):hover {
+            border-left-color: #ff9900;
+        }
+        .triangle .button:nth-child(odd).selected {
+            border-right-color: #000;
+        }
+        .triangle .button:nth-child(even).selected {
+            border-left-color: #000;
+        }
+    </style>
+</head>
+<body>
+	<div class="pair">
+        <div class="button">option 1</div>
+        <div class="button">option 2</div>   
+    </div>
+    <div class="pair triangle">
+        <div class="button"></div>
+        <div class="button"></div>   
+    </div>
+    <script defer>
+    	var button = d3.selectAll(".button");
+    	button.on("click",function(){
+            /*
+                this code just booleans whether or not the button has the class "selected"
+                there's a much more elegant way to do this in jQuery, fwiw:
+                $(".button").click(function(){ $(this).toggleClass("selected"); });
+            */
+    		d3.select(this).classed("selected", function(){ 
+    			return !d3.select(this).classed("selected"); 
+    		});
+    	});
+    </script>
+</body>

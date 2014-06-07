@@ -1,0 +1,45 @@
+<head>
+    <script src="d3.min.js"></script>
+    <style>
+        .button {
+            background-color: black;
+            color: white;
+            padding: 20px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            font-family: Helvetica;
+            display: inline-block;
+        }
+        svg {
+            display: block;
+            background-color: #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="button">click me!</div>
+    <script defer>
+        var width = 1200, height = 600;
+    	var svg = d3.select("body").append("svg").attr("width",width).attr("height",height);
+        // dummy data just to generate the circles
+        var circleArray = ["a", "b", "c"];
+
+        var circles = svg.selectAll("circle").data(circleArray);
+        circles.enter().append("circle").attr("r","10").attr("cx","600").attr("cy","300");
+
+        d3.select(".button").on("click",animate);
+
+        function animate() {
+            // most basic transition call, basically auto-animation
+            circles.transition()
+                .attr("cx",function(){ return Math.random()*width; })
+                .attr("cy",function(){ return Math.random()*height; });
+            /*
+                in addition to animating attributes, play around with:
+                .ease()
+                .duration()
+                .delay()
+            */
+        }
+    </script>
+</body>

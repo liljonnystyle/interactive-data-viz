@@ -1,0 +1,214 @@
+<head>
+    <!-- 
+        It wouldn’t be a party if the map and the chart didn’t influence each other, so let’s hook them up!
+
+        We’ll accomplish this through a mix of class names and CSS styles. First, add class names on the dot group and the bar group, according to each element’s State name, with this function:
+
+        function getClassName(name){
+            return name.toLowerCase().replace(/^\s+|\s+$/g, '').replace(/\s+/g, '-');
+        }
+
+        Then make use of .on("mouseenter") and .on("mouseleave") to add a .selected class name to the respective SVG element — and let CSS handle the rest!
+
+        Goals:
+
+        Make it so that a hover event on the map triggers a hover event in the chart
+        Reverse it so that a hover event on the chart triggers the map
+        Refine the hover style to make the interaction more obvious
+     -->
+    <script src="d3.min.js"></script>
+    <style>
+        body {
+            font-family: Helvetica;
+        }
+        svg {
+            background-color: #eee;
+            display: block;
+        }
+        .stateLine {
+            fill: none;
+            stroke: #ccc;
+        }
+        .title {
+            font-size: 20px;
+            text-anchor: middle;
+        }
+        .stateName {
+            text-anchor: end;
+            font-size: 12px;
+            baseline-shift: -12px;
+        }
+        .label {
+            text-anchor: middle;
+            font-size: 12px;
+            display: none;
+        }
+        .state:hover .label {
+            display: block;
+        }
+        .state path {
+            opacity: .7;
+        }
+        .state:hover path {
+            opacity: 1;
+        }
+        .button {
+            display: inline-block;
+            background-color: black;
+            color: white;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <script defer>
+        var width = 1400, height = 500, padding = 50, chartWidth = 600;
+    	var svg = d3.select("body").append("svg").attr("width",width).attr("height",height);
+
+        d3.json("states.json",function(json){
+            svg.append("g").attr("class","mapGroup");
+            var states = svg.select(".mapGroup").selectAll(".stateLine").data(json.features);
+            states.enter().append("path").attr("class","stateLine")
+                .attr("d", d3.geo.path());
+
+            function getCentroid(stateName) {
+                var stateData;
+                json.features.forEach(function(d,i){
+                    if (d.properties.NAME == stateName) {
+                        stateData = d;
+                        return;
+                    }
+                });
+                return d3.geo.centroid(stateData);
+            }
+            
+            d3.csv("crime_each.csv",function(csv){
+
+                var dataTitles = ["Murder","Robbery","Aggravated Assault","Burglary","Motor Vehicle Theft"];
+                var dataPoint = dataTitles[Math.floor(Math.random()*5)];
+
+                var button = d3.select("body").insert("div","svg")
+                    .attr("class","button").text("randomize")
+                    .on("click",function(){
+                        dataPoint = dataTitles[Math.floor(Math.random()*5)];
+                        displayData();
+                    });
+
+                var yAxis = d3.svg.axis();
+
+                function setupData() {
+                    svg.append("text").attr("class","title")
+                        .attr("x",width/2).attr("y",padding)
+                        .text(dataPoint);
+                    var states = svg.append("g").attr("class","dotGroup")
+                        .selectAll(".state").data(csv);
+                    var entering = states.enter().append("g").attr("class","state");
+
+                    var centroid;
+                    entering.append("path").datum(function(d) {
+                        var stateName = d.State.replace(/^\s+|\s+$/g, '');
+                        return {
+                            type: "Point",
+                            coordinates: getCentroid(stateName), 
+                            radius: parseFloat(d[dataPoint]),
+                            dataset: d
+                        };
+                    });
+                    entering.append("text").datum(function(d){
+                        var stateName = d.State.replace(/^\s+|\s+$/g, '');
+                        return {
+                            coordinates: getCentroid(stateName),
+                            dataset: d
+                        }
+                    });
+
+                    var dataMax = d3.max(csv, function(d){ return parseFloat(d[dataPoint]); });
+                    var scaleHeight = d3.scale.linear()
+                        .domain([0, dataMax]).range([height-3*padding,0]);
+
+                    svg.append("g").attr("class","barGroup").attr("transform","translate(850,0)");
+                    yAxis.scale(scaleHeight).orient("left");
+                    svg.select(".barGroup").append("g").attr("class","yAxis")
+                        .attr("transform","translate("+(2*padding-5)+","+padding+")").call(yAxis);
+                }
+
+                function displayData() {
+                    var extent = d3.extent(csv, function(d){ return parseFloat(d[dataPoint]); });
+                    var radius = d3.scale.sqrt()
+                        .domain(extent)
+                        .range([3, 30]);
+
+                    var colorScale = d3.scale.linear().domain([0,extent[1]]).range(["#ff9900","#ff0099"]);
+
+                    svg.select(".title").text(dataPoint);
+
+                    var projection = d3.geo.albersUsa();
+                    var circlePath = d3.geo.path()
+                        .pointRadius(function(d) { return radius(d.radius); });
+
+                    var dotGroup = svg.select(".dotGroup");
+                    dotGroup.selectAll("path")
+                        .each(function(d){ d.radius = parseFloat(d.dataset[dataPoint])})
+                        .attr("d", circlePath)
+                        .attr("fill",function(d){ return colorScale(d.dataset[dataPoint]); });
+
+                    dotGroup.selectAll("text")
+                        .text(function(d){ return d.dataset[dataPoint]; })
+                        .attr("class","label")
+                        .attr("transform", function(d) { return "translate(" + projection(d.coordinates) + ")"; })
+                        .attr("y",function(d){ return -2 -radius(parseFloat(d.dataset[dataPoint])); })
+
+                    updateBarChart();
+                }
+
+                function updateBarChart() {
+                    var dataMax = d3.max(csv, function(d){ return parseFloat(d[dataPoint]); });
+                    var scaleHeight = d3.scale.linear()
+                        .domain([0, dataMax]).range([height-3*padding,0]);
+
+                    var colorScale = d3.scale.linear().domain([0,dataMax]).range(["#ff9900","#ff0099"]);
+                    var xPos = d3.scale.linear().domain([0,csv.length-1]).range([padding*2, chartWidth-padding*2]);
+
+                    yAxis.scale(scaleHeight)
+                    svg.select(".yAxis").call(yAxis);
+
+                    var states = svg.select(".barGroup").selectAll(".stateBar").data(csv);
+                    var entering = states.enter().append("g").attr("class","stateBar");
+
+                    states.attr("transform",function(d,i){
+                            return "translate("+xPos(i)+","+(scaleHeight(d[dataPoint])+padding)+")";
+                        });
+
+                    entering.append("rect").attr("width",6);
+                    states.select("rect")
+                        .attr("height",function(d){ return scaleHeight(dataMax - d[dataPoint])})
+                        .attr("fill",function(d){ return colorScale(d[dataPoint]); });
+
+                    entering.append("text").attr("class","stateName")
+                        .text(function(d){ return d.State; })
+                        .attr("transform","rotate(-90)");
+                    states.select(".stateName")
+                        .attr("x",function(d){ return -3-scaleHeight(dataMax - d[dataPoint]); })
+
+                    entering.append("text").attr("class","label").attr("x",4);
+                    states.select(".label").text(function(d){
+                        return d[dataPoint];
+                    });
+
+                    states.on("mouseenter",function(){
+                        this.parentNode.appendChild(this);
+                        d3.select(this).select(".label").style("display","block");
+                        d3.select(this).select("rect").style("opacity",.5);
+                    }).on("mouseleave",function(){
+                        d3.select(this).select(".label").style("display","none");
+                        d3.select(this).select("rect").style("opacity",1);
+                    });
+                }
+
+                setupData();
+                displayData();
+            });
+        });
+    </script>
+</body>

@@ -1,0 +1,126 @@
+<head>
+    <!-- 
+        Data visualization is no fun without the data, so let’s build a way to see the individual datapoints. In this section we’ll add some hover interactivity, and explore when it’s best to do that in CSS vs. JS. For the JS side of things, we’ll be exploring d3’s event-binding with .on().
+
+        Goals:
+
+        Add a data label at the top of each bar
+        Hide the label, and display it on :hover of the group in CSS
+        Rewrite the hover behavior using .on("mouseenter") and .on("mouseleave")
+     -->
+    <script src="d3.min.js"></script>
+    <style>
+        body {
+            font-family: Helvetica;
+        }
+        svg {
+            background-color: #eee;
+            display: block;
+        }
+        .title {
+            font-size: 20px;
+            text-anchor: middle;
+        }
+        .state text {
+            text-anchor: end;
+            font-size: 12px;
+            baseline-shift: -12px;
+        }
+        .button {
+            display: inline-block;
+            background-color: black;
+            color: white;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+
+        .label {
+            text-anchor: middle;
+            font-size: 12px;
+            baseline-shift: 5px;
+            display: none;
+        }
+
+        .state:hover .label {
+            display: block;
+        }
+        .state:hover rect {
+            opacity: .5;
+        }
+        
+    </style>
+</head>
+<body>
+    <script defer>
+        var width = 1200, height = 500, padding = 50;
+    	var svg = d3.select("body").append("svg").attr("width",width).attr("height",height);
+
+        d3.csv("crime_each.csv",function(csv){
+
+            var dataTitles = ["Murder","Robbery","Aggravated Assault","Burglary","Motor Vehicle Theft"];
+            var dataPoint = dataTitles[Math.floor(Math.random()*5)];
+
+            var button = d3.select("body").insert("div","svg")
+                .attr("class","button").text("randomize")
+                .on("click",function(){
+                    dataPoint = dataTitles[Math.floor(Math.random()*5)];
+                    displayData();
+                });
+
+            var yAxis = d3.svg.axis();
+            var xPos = d3.scale.linear().domain([0,csv.length-1]).range([padding*2, width-padding*2]);
+
+            function setupData() {
+                var dataMax = d3.max(csv, function(d){ return parseFloat(d[dataPoint]); });
+                var scaleHeight = d3.scale.linear()
+                    .domain([0, dataMax]).range([height-3*padding,0]);
+
+                svg.append("text").attr("class","title")
+                    .attr("x",width/2).attr("y",padding)
+                    .text(dataPoint);
+                
+                yAxis.scale(scaleHeight).orient("left");
+                svg.append("g").attr("class","yAxis")
+                    .attr("transform","translate("+(2*padding-5)+","+padding+")").call(yAxis);
+            }
+
+            function displayData() {
+                var dataMax = d3.max(csv, function(d){ return parseFloat(d[dataPoint]); });
+                var scaleHeight = d3.scale.linear()
+                    .domain([0, dataMax]).range([height-3*padding,0]);
+
+                var colorScale = d3.scale.linear().domain([0,dataMax]).range(["#ff9900","#ff0099"]);
+
+                svg.select(".title").text(dataPoint);
+                yAxis.scale(scaleHeight)
+                svg.select(".yAxis").call(yAxis);
+
+                var states = svg.selectAll(".state").data(csv);
+                var entering = states.enter().append("g").attr("class","state");
+
+                states.attr("transform",function(d,i){
+                        return "translate("+xPos(i)+","+(scaleHeight(d[dataPoint])+padding)+")";
+                    });
+
+                entering.append("rect").attr("width",15);
+                states.select("rect")
+                    .attr("height",function(d){ return scaleHeight(dataMax - d[dataPoint])})
+                    .attr("fill",function(d){ return colorScale(d[dataPoint]); });
+
+                entering.append("text").attr("class","stateName")
+                    .text(function(d){ return d.State; })
+                    .attr("transform","rotate(-90)");
+                states.select(".stateName")
+                    .attr("x",function(d){ return -3-scaleHeight(dataMax - d[dataPoint]); });
+
+                entering.append("text").attr("class", "label");
+                states.select(".label").text(function(d) {
+                    return d[dataPoint];
+
+                }).attr("x", 7);
+            }
+            setupData();
+            displayData();
+        });
+    </script>
+</body>

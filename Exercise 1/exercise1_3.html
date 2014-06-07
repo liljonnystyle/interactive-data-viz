@@ -1,0 +1,85 @@
+<head>
+    <!-- 
+        Oh boy, now we’re getting somewhere! It’s time to make use of our full dataset, and add the ability to view graphs of the other data columns. This section is designed to show the difference between .enter() code and regular updates, and how to bind new data to elements through .data() and update the SVG attributes.
+
+        Goals:
+
+        Refactor the code so that you have a function to call each time the data is updated.
+        Make a button that randomly picks which data column to show, and updates the graph when clicked
+     -->
+    <script src="d3.min.js"></script>
+    <style>
+        body {
+            font-family: Helvetica;
+        }
+        svg {
+            background-color: #eee;
+        }
+        .title {
+            font-size: 20px;
+            text-anchor: middle;
+        }
+        .state text {
+            text-anchor: end;
+            font-size: 12px;
+            baseline-shift: -12px;
+        }
+        .button {
+            display: inline-block;
+            background-color: black;
+            color: white;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <script defer>
+        var width = 1200, height = 500, padding = 60;
+    	var svg = d3.select("body").append("svg").attr("width",width).attr("height",height);
+
+        d3.csv("crime_each.csv",function(csv){
+
+            // var dataPoint = "Burglary";
+            // var dataPoint = "Motor Vehicle Theft";
+            var dataPoint = "Motor Vehicle Theft";
+
+            var button = d3.select("body").insert("div","svg")
+                .attr("class","button").text("randomize");
+                // .on("click",function(){
+                //     dataPoint = dataTitles[Math.floor(Math.random()*5)];
+                //     displayData();
+                // });
+
+            var dataMax = d3.max(csv, function(d){ return parseFloat(d[dataPoint]); });
+            var scaleHeight = d3.scale.linear()
+                .domain([0, dataMax]).range([height-3*padding,0]);
+
+            var xPos = d3.scale.linear().domain([0,csv.length-1]).range([padding*2, width-padding*2]);
+
+            var yAxis = d3.svg.axis();
+            yAxis.scale(scaleHeight).orient("left");
+            svg.append("g").attr("transform","translate("+(2*padding-5)+","+padding+")").call(yAxis);
+
+            var chartTitle = svg.append("text").attr("class","title")
+                .attr("x",width/2).attr("y",padding)
+                .text(dataPoint);
+
+            var colorScale = d3.scale.linear().domain([0,dataMax]).range(["#ff9900","#ff0099"]);
+
+            var states = svg.selectAll(".state").data(csv);
+
+                console.log(states)
+            var group = states.enter().append("g").attr("class","state")
+                .attr("transform",function(d,i){
+                    return "translate("+xPos(i)+","+(scaleHeight(d[dataPoint])+padding)+")";
+                });
+            var bar = group.append("rect").attr("width",15);
+                bar.attr("height",function(d){ return scaleHeight(dataMax - d[dataPoint])})
+                    .attr("fill",function(d){ return colorScale(d[dataPoint]); });
+            var label = group.append("text").text(function(d){ return d.State; })
+                .attr("x",function(d){ return -3-scaleHeight(dataMax - d[dataPoint]); })
+                .attr("transform","rotate(-90)");
+        });
+    </script>
+</body>

@@ -1,0 +1,236 @@
+<head>
+    <!-- 
+        Our visualization is looking pretty good, so now it’s time to refine the design. Let’s start by changing the “randomize” button to something more understandable, like a row of buttons for each data column.
+
+        Next, we’ll add some basic animation to our chart for when it transitions between data columns. We’ll have to reorganize some of our SVG attributes to be assigned before or after .transition() is called.
+
+        Goals:
+
+        Add buttons to select the data column
+        Add animation between chart types with .transition()
+        Refactor the code for which attributes should be transitioned and which should be set before .transition() is called
+
+        If you’re feeling saucy:
+
+        Style the buttons set to look more cohesive
+        Add hover and selected state styles — and get creative!
+        Change the chart title to be more prominent on the page
+     -->
+    <script src="d3.min.js"></script>
+    <style>
+        body {
+            font-family: Helvetica;
+        }
+        svg {
+            background-color: #eee;
+            display: block;
+        }
+        .stateLine {
+            fill: none;
+            stroke: #ccc;
+        }
+        .title {
+            font-size: 20px;
+            text-anchor: middle;
+        }
+        .stateName {
+            text-anchor: end;
+            font-size: 12px;
+            baseline-shift: -4px;
+            display: none;
+        }
+        .label {
+            text-anchor: middle;
+            font-size: 12px;
+            display: none;
+        }
+        .state:hover .label,
+        .state.selected .label,
+        .stateBar:hover .label {
+            display: block;
+        }
+        .stateBar:hover .stateName,
+        .stateBar.selected .stateName {
+            display: block;
+        }
+        .stateBar rect,
+        .state path {
+            opacity: .5;
+        }
+        .stateBar:hover rect,
+        .stateBar.selected rect,
+        .state:hover path,
+        .state.selected path {
+            opacity: 1;
+        }
+        .button {
+            display: inline-block;
+            background-color: black;
+            color: white;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <script defer>
+        var width = 1400, height = 500, padding = 50, chartWidth = 600;
+    	var svg = d3.select("body").append("svg").attr("width",width).attr("height",height);
+
+        d3.json("states.json",function(json){
+            svg.append("g").attr("class","mapGroup");
+            var states = svg.select(".mapGroup").selectAll(".stateLine").data(json.features);
+            states.enter().append("path").attr("class","stateLine")
+                .attr("d", d3.geo.path());
+
+            function getCentroid(stateName) {
+                var stateData;
+                json.features.forEach(function(d,i){
+                    if (d.properties.NAME == stateName) {
+                        stateData = d;
+                        return;
+                    }
+                });
+                return d3.geo.centroid(stateData);
+            }
+
+            d3.csv("crime_each.csv",function(csv){
+
+                var dataTitles = ["Murder","Robbery","Aggravated Assault","Burglary","Motor Vehicle Theft"];
+                var dataPoint = dataTitles[Math.floor(Math.random()*5)];
+
+                var button = d3.select("body").insert("div","svg")
+                    .attr("class","button").text("randomize")
+                    .on("click",function(){
+                        dataPoint = dataTitles[Math.floor(Math.random()*5)];
+                        displayData();
+                    });
+
+                var yAxis = d3.svg.axis();
+
+                function setupData() {
+                    svg.append("text").attr("class","title")
+                        .attr("x",width/2).attr("y",padding)
+                        .text(dataPoint);
+                    var states = svg.append("g").attr("class","dotGroup")
+                        .selectAll(".state").data(csv);
+                    var entering = states.enter().append("g").attr("class","state")
+                        .attr("class",function(d){ return "state "+ getClassName(d.State); });
+
+                    var centroid;
+                    entering.append("path").datum(function(d) {
+                        var stateName = d.State.replace(/^\s+|\s+$/g, '');
+                        return {
+                            type: "Point",
+                            coordinates: getCentroid(stateName), 
+                            radius: parseFloat(d[dataPoint]),
+                            dataset: d
+                        };
+                    });
+                    entering.append("text").datum(function(d){
+                        var stateName = d.State.replace(/^\s+|\s+$/g, '');
+                        return {
+                            coordinates: getCentroid(stateName),
+                            dataset: d
+                        }
+                    });
+
+                    var dataMax = d3.max(csv, function(d){ return parseFloat(d[dataPoint]); });
+                    var scaleHeight = d3.scale.linear()
+                        .domain([0, dataMax]).range([height-3*padding,0]);
+
+                    svg.append("g").attr("class","barGroup").attr("transform","translate(850,0)");
+                    yAxis.scale(scaleHeight).orient("left");
+                    svg.select(".barGroup").append("g").attr("class","yAxis")
+                        .attr("transform","translate("+(2*padding-5)+","+padding+")").call(yAxis);
+                }
+
+                function displayData() {
+                    var extent = d3.extent(csv, function(d){ return parseFloat(d[dataPoint]); });
+                    var radius = d3.scale.sqrt()
+                        .domain(extent)
+                        .range([3, 30]);
+
+                    var colorScale = d3.scale.linear().domain([0,extent[1]]).range(["#ff9900","#ff0099"]);
+
+                    svg.select(".title").text(dataPoint);
+
+                    var projection = d3.geo.albersUsa();
+                    var circlePath = d3.geo.path()
+                        .pointRadius(function(d) { return radius(d.radius); });
+
+                    var dotGroup = svg.select(".dotGroup");
+                    dotGroup.selectAll("path")
+                        .each(function(d){ d.radius = parseFloat(d.dataset[dataPoint])})
+                        .attr("d", circlePath)
+                        .attr("fill",function(d){ return colorScale(d.dataset[dataPoint]); })
+                        .on("mouseenter",function(d){
+                            d3.select(".barGroup").select("."+getClassName(d.dataset.State))
+                                .classed("selected",true);
+                        }).on("mouseleave",function(d){
+                            d3.select(".barGroup").select("."+getClassName(d.dataset.State))
+                                .classed("selected",false);
+                        });
+
+                    dotGroup.selectAll("text")
+                        .text(function(d){ return d.dataset[dataPoint]; })
+                        .attr("class","label")
+                        .attr("transform", function(d) { return "translate(" + projection(d.coordinates) + ")"; })
+                        .attr("y",function(d){ return -2 -radius(parseFloat(d.dataset[dataPoint])); })
+
+                    updateBarChart();
+                }
+
+                function updateBarChart() {
+                    var dataMax = d3.max(csv, function(d){ return parseFloat(d[dataPoint]); });
+                    var scaleHeight = d3.scale.linear()
+                        .domain([0, dataMax]).range([height-3*padding,0]);
+
+                    var colorScale = d3.scale.linear().domain([0,dataMax]).range(["#ff9900","#ff0099"]);
+                    var xPos = d3.scale.linear().domain([0,csv.length-1]).range([padding*2, chartWidth-padding*2]);
+
+                    yAxis.scale(scaleHeight)
+                    svg.select(".yAxis").call(yAxis);
+
+                    var states = svg.select(".barGroup").selectAll(".stateBar").data(csv);
+                    var entering = states.enter().append("g").attr("class","stateBar");
+
+                    states.attr("transform",function(d,i){
+                            return "translate("+xPos(i)+","+(scaleHeight(d[dataPoint])+padding)+")";
+                        }).attr("class",function(d){ return "stateBar "+getClassName(d.State); });
+
+                    states.on("mouseenter",function(d){
+                            d3.select(".dotGroup").select("."+getClassName(d.State))
+                                .classed("selected",true);
+                        }).on("mouseleave",function(d){
+                            d3.select(".dotGroup").select("."+getClassName(d.State))
+                                .classed("selected",false);
+                        });
+
+                    entering.append("rect").attr("width",6);
+                    states.select("rect")
+                        .attr("height",function(d){ return scaleHeight(dataMax - d[dataPoint])})
+                        .attr("fill",function(d){ return colorScale(d[dataPoint]); });
+
+                    entering.append("text").attr("class","stateName")
+                        .text(function(d){ return d.State; })
+                        .attr("transform","rotate(-90)");
+                    states.select(".stateName")
+                        .attr("x",function(d){ return -3-scaleHeight(dataMax - d[dataPoint]); })
+
+                    entering.append("text").attr("class","label").attr("x",4);
+                    states.select(".label").text(function(d){
+                        return d[dataPoint];
+                    });
+                }
+
+                function getClassName(name){
+                    return name.toLowerCase().replace(/^\s+|\s+$/g, '').replace(/\s+/g, '-');
+                }
+
+                setupData();
+                displayData();
+            });
+        });
+    </script>
+</body>

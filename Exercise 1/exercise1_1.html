@@ -1,0 +1,49 @@
+<head>
+    <!-- 
+        Now that we’ve got some (ugly!!) bars on the page, let’s make them a bit prettier with d3.scale. A scale is comprised of three parts:
+
+        Type of scale, either quantitative (linear, power, log), ordinal (discrete sets, like names or categories), or time (using the Date() object)
+        Domain (input)
+        Range (output)
+        
+        We’ll use d3.scale.linear() for three aspects of our graph: x-position, y-position, and color.
+
+        Goals:
+
+        Use d3.max() to calculate the max of our dataset
+        Add an x-position scale to evenly space our bars with appropriate padding (x)
+        Add a y-position scale to calculate both height and y
+        Add a color scale to calculate the fill of the bars according to their value
+
+     -->
+    <script src="d3.min.js"></script>
+    <style>
+        body {
+            font-family: Helvetica;
+        }
+        svg {
+            background-color: #eee;
+        }
+    </style>
+</head>
+<body>
+    <script defer>
+        var width = 1200, height = 500, padding = 50;
+    	var svg = d3.select("body").append("svg").attr("width",width).attr("height",height);
+
+        d3.csv("crime_each.csv",function(csv){
+
+            var dataPoint = "Burglary";
+
+            var states = svg.selectAll(".state").data(csv);
+
+            var bar = states.enter()
+                .append("rect")
+                .attr("class","state")
+                .attr("width",15)
+                .attr("x",function(d,i){ return width * i/csv.length-1; })
+                .attr("y",function(d){ return height - d[dataPoint]/3; })
+                .attr("height",function(d){ return d[dataPoint]/3; });
+        });
+    </script>
+</body>

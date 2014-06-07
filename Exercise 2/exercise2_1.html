@@ -1,0 +1,128 @@
+<head>
+    <!-- 
+        Hooray, now we have an (ugly!!) symbol map. It’s time to use our tricks from the bar chart to make this map look better — let’s add some color to those circles, and data labels on top.
+
+        Goals:
+
+        Color the circles using d3.scale()
+        Add data labels above the circle that appear on hover
+     -->
+    <script src="d3.min.js"></script>
+    <style>
+        body {
+            font-family: Helvetica;
+        }
+        svg {
+            background-color: #eee;
+            display: block;
+        }
+        .stateLine {
+            fill: none;
+            stroke: #ccc;
+        }
+        .title {
+            font-size: 20px;
+            text-anchor: middle;
+        }
+        .stateName {
+            text-anchor: end;
+            font-size: 12px;
+            baseline-shift: -12px;
+        }
+        .label {
+            text-anchor: middle;
+            font-size: 12px;
+            baseline-shift: 5px;
+            display: none;
+        }
+        .state:hover .label {
+            display: block;
+        }
+        .state:hover rect {
+            opacity: .5;
+        }
+        .button {
+            display: inline-block;
+            background-color: black;
+            color: white;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <script defer>
+        var width = 1200, height = 500, padding = 50;
+    	var svg = d3.select("body").append("svg").attr("width",width).attr("height",height);
+
+        d3.json("states.json",function(json){
+            svg.append("g").attr("class","mapGroup");
+            var states = svg.select(".mapGroup").selectAll(".stateLine").data(json.features);
+            states.enter().append("path").attr("class","stateLine")
+                .attr("d", d3.geo.path());
+
+            function getCentroid(stateName) {
+                var stateData;
+                json.features.forEach(function(d,i){
+                    if (d.properties.NAME == stateName) {
+                        stateData = d;
+                        return;
+                    }
+                });
+                return d3.geo.centroid(stateData);
+            }
+
+            d3.csv("crime_each.csv",function(csv){
+
+                var dataTitles = ["Murder","Robbery","Aggravated Assault","Burglary","Motor Vehicle Theft"];
+                var dataPoint = dataTitles[Math.floor(Math.random()*5)];
+
+                var button = d3.select("body").insert("div","svg")
+                    .attr("class","button").text("randomize")
+                    .on("click",function(){
+                        dataPoint = dataTitles[Math.floor(Math.random()*5)];
+                        displayData();
+                    });
+
+                function setupData() {
+                    svg.append("text").attr("class","title")
+                        .attr("x",width/2).attr("y",padding)
+                        .text(dataPoint);
+                        
+                    var states = svg.append("g").attr("class","dotGroup")
+                        .selectAll(".state").data(csv);
+                    var entering = states.enter().append("g").attr("class","state");
+
+                    entering.append("path").datum(function(d) {
+                        var stateName = d.State.replace(/^\s+|\s+$/g, '');
+                        return {
+                            type: "Point",
+                            coordinates: getCentroid(stateName), 
+                            radius: parseFloat(d[dataPoint]),
+                            dataset: d
+                        };
+                    });
+                }
+
+                function displayData() {
+                    var extent = d3.extent(csv, function(d){ return parseFloat(d[dataPoint]); });
+                    var radius = d3.scale.sqrt()
+                        .domain(extent)
+                        .range([5, 50]);
+
+                    svg.select(".title").text(dataPoint);
+
+                    var circlePath = d3.geo.path()
+                        .pointRadius(function(d) { return radius(d.radius); });
+
+                    svg.select(".dotGroup").selectAll("path")
+                        .each(function(d){ d.radius = parseFloat(d.dataset[dataPoint])})
+                        .attr("d", circlePath);
+                }
+
+                setupData();
+                displayData();
+            });
+        });
+    </script>
+</body>

@@ -1,0 +1,107 @@
+<head>
+    <script src="d3.min.js"></script>
+    <style>
+        .button {
+            background-color: black;
+            color: white;
+            padding: 20px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            font-family: Helvetica;
+            display: inline-block;
+        }
+        circle {
+            cursor: pointer;
+        }
+        svg {
+            display: block;
+            background-color: #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="button bounce">bounce circles!</div>
+    <div class="button spin">spin circles!</div>
+    <script defer>
+        var width = 1200, height = 600;
+    	var svg = d3.select("body").append("svg").attr("width",width).attr("height",height);
+        var circleArray = ["a", "b", "c"];
+
+        var circles = svg.selectAll("circle").data(circleArray);
+        circles.enter().append("circle").attr("r","20").attr("cx","600").attr("cy","300");
+
+        // buttons at the top to drive the animation
+        d3.select(".spin").on("click",spinCircles);
+        d3.select(".bounce").on("click",bounceCircles);
+
+        var color = d3.scale.linear()
+            .domain([0, 1])
+            .range(["#ff9900","#ff0099"]);
+
+        function bounceCircles() {
+            /*
+                this transition bounces the circles to a random location, with a random radius
+                and a 100ms delay between them. when each of them reaches their end, they transition
+                back to r=20, with a new color and move back into a line at the center of the page
+            */
+            circles.transition()
+                .ease("bounce")
+                .duration(1500)
+                .delay(function(d,i){ return i*100; })
+                .attr("r",function(){ return Math.random()*100 + 10; })
+                .attr("cx",function(){ return Math.random()*width; })
+                .attr("cy",function(){ return Math.random()*height; })
+                .each("end",function(d,i){
+                    d3.select(this).transition().delay(200).duration(1000)
+                        .attr("r",20)
+                        .attr("fill",function(){ return color(Math.random()); })
+                        .attr("cx",function(){ return width*i/4 + width/4; })
+                        .attr("cy",function(){ return height/2; });
+                })
+        }
+
+        function spinCircles() {
+            // starting off the animation with .call()
+            circles.call(expand);
+
+            function expand() {
+                /*
+                    transition the circles into positions on a circle with radius 200, 2*PI/3 radians apart
+                    color according to their index, and when finished call spin()
+                */
+                this.transition().duration(1000).ease("elastic")
+                    .attr("cx",function(d,i){ return width/2 + Math.cos(i*2*Math.PI/3)*200; })
+                    .attr("cy",function(d,i){ return height/2 + Math.sin(i*2*Math.PI/3)*200; })
+                    .attr("fill",function(d,i){ return color(i/2); })
+                    .each("end",function(d,i){ return spin(this,i); });
+            }
+
+            var arc = d3.interpolate(0, 2*Math.PI);
+
+            function spin(c,i){
+                /*
+                    this spins the circles around on a circular path, interpolating t
+                    from 0 to 2PI, as defined in arc above.
+                    it also accounts for their initial position on the circle (i*2*Math.PI/3)
+                */
+                d3.select(c).transition().duration(1500).ease("bounce")
+                .attrTween("cx", function() {
+                    return function(t){
+                        return width/2 + Math.cos((i*2*Math.PI/3) + arc(t))*200;
+                    }
+                }).attrTween("cy", function() {
+                    return function(t){
+                        return height/2 + Math.sin((i*2*Math.PI/3) + arc(t))*200;
+                    }
+                }).each("end",function(d,i){ return collapse(this,i); });
+            }
+
+            function collapse(c,i){
+                d3.select(c).transition()
+                    .attr("fill","black")
+                    .attr("cx",width/2)
+                    .attr("cy",height/2);
+            }
+        }
+    </script>
+</body>

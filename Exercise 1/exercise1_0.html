@@ -1,0 +1,99 @@
+<head>
+    <!-- 
+    So we've got a basic HTML page, with an SVG element on the page and d3.csv() loading our CSV file.
+
+    Goals:
+    1. Understand how .data(), .enter(), and .exit() work
+    2. Add rect elements to the page with our CSV data bound to them
+    3. Set the width, height, x, and y attributes
+     -->
+    <script src="d3.min.js"></script>
+    <style>
+        body {
+            font-family: Helvetica;
+        }
+        svg {
+            background-color: #eee;
+        }
+    </style>
+</head>
+<body>
+    <script defer>
+        var width = 1200, height = 500, padding = 100;
+    	var svg = d3.select("body").append("svg").attr("width",width).attr("height",height);
+
+        d3.csv("crime_each.csv",function(csv){
+            //console.log(csv);
+            /* Data loads as an array of states, like so:
+            {
+                Aggravated Assault: "247.8"
+                Burglary: "953.8"
+                Larceny Theft: "2650"
+                Motor Vehicle Theft: "288.3"
+                Murder: "8.2"
+                Rape: "34.3"
+                Robbery: "141.4"
+                State: "Alabama "
+            }
+            */
+
+            var dataPoint = "Murder";
+            var dataPoint2 = "Motor Vehicle Theft";
+
+            var dataMax = d3.max(csv,function(d) {
+                return parseFloat(d[dataPoint]);
+            });
+
+            console.log("MAX = " + dataMax);
+            console.log("first= " + csv[0][dataPoint]);
+
+            var xPos = d3.scale.linear().domain([0,csv.length]).range([padding,width-padding]);
+
+            var colorMax = d3.max(csv,function(d) {
+                return parseFloat(d[dataPoint2]);
+            });
+
+            var colorScale = d3.scale.linear()
+                .domain([0,colorMax])
+                .range(["#112233", "#aaaaaa"]);
+
+            var heightScale = d3.scale.linear()
+                .domain([0,dataMax])
+                .range([height-padding,padding]);
+
+            var yAxis = d3.svg.axis();
+            yAxis.scale(heightScale).orient("left");
+            svg.append("g").attr("class","yAxis")
+                .attr("transform","translate(50,50)")
+                .call(yAxis)
+
+            var states = svg.selectAll(".state").data(csv);
+            states.enter()
+                .append("rect")
+                .attr("class","state")
+                .attr("fill", function(d,i) {
+                    console.log(d.State,i);
+                    return colorScale(d[dataPoint2]);
+                })
+                .attr("width", function(d,i) {
+                    return (width-padding)/(csv.length*1.25);
+                })
+                .attr("height", function(d,i) {
+                    return (height-2*padding)*d[dataPoint]/dataMax;
+                    // d.Murder*20
+                })
+                .attr("x", function(d,i) {
+                    return xPos(i);
+                })
+                .attr("y", function(d,i) {
+                    return (height-2*padding)*(1-d[dataPoint]/dataMax)+padding;
+                    //500 - d.Murder*20
+                })
+                .append("text", function(d) {
+                    return d.State
+                })
+                // .exit()
+                // .remove();
+        });
+    </script>
+</body>

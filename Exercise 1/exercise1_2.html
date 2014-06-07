@@ -1,0 +1,55 @@
+<head>
+    <!-- 
+        Time to start getting fancy! Now we’re going to add some labeling to our file, to turn it from a pile of rectangles into an understandable graph. We’ll be adding three important items:
+
+        A graph title so that we know which datapoint we are looking at
+        Y-Axis to show the values of the bars
+        State labels on the bottom of the graph
+
+        We’ll be introducing a couple of concepts here, namely d3.axis() for the y-axis, and making use of SVG g elements and transform attributes to create the state labels. We’ll also look at some of the formatting elements available for SVG text.
+
+        Goals:
+
+        Add a text label at the top of the graph with our datapoint as a title
+        Use d3.axis() with our y-position scale to add a y-axes on the left side of the graph
+        Add state labels, in three parts:
+            Wrap each of the rect elements in a g group, translate them to their correct position
+            Reposition rect inside of the transform
+            Add text labels with the state name and rotate them to be vertical.
+     -->
+    <script src="d3.min.js"></script>
+    <style>
+        body {
+            font-family: Helvetica;
+        }
+        svg {
+            background-color: #eee;
+        }
+    </style>
+</head>
+<body>
+    <script defer>
+        var width = 1200, height = 500, padding = 50;
+    	var svg = d3.select("body").append("svg").attr("width",width).attr("height",height);
+
+        d3.csv("crime_each.csv",function(csv){
+
+            var dataPoint = "Burglary";
+
+            var dataMax = d3.max(csv, function(d){ return parseFloat(d[dataPoint]); });
+            var scaleHeight = d3.scale.linear()
+                .domain([0, dataMax]).range([height-padding, padding]);
+
+            var xPos = d3.scale.linear().domain([0,csv.length-1]).range([padding*2, width-padding*2]);
+
+            var colorScale = d3.scale.linear().domain([0,dataMax]).range(["#ff9900","#ff0099"]);
+
+            var states = svg.selectAll(".state").data(csv);
+            var bar = states.enter().append("rect").attr("class","state").attr("width",15);
+                bar.attr("x",function(d,i){ return xPos(i); })
+                    .attr("y",function(d){ return height - padding - scaleHeight(d[dataPoint])})
+                    .attr("height",function(d){ return scaleHeight(d[dataPoint])})
+                    .attr("fill",function(d){ return colorScale(d[dataPoint]); });
+        });
+    </script>
+</body>

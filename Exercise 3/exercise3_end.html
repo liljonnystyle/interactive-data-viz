@@ -1,0 +1,272 @@
+<head>
+    <script src="d3.min.js"></script>
+    <style>
+        body {
+            font-family: Futura;
+        }
+        .pair {
+            border: 1px solid #000;
+            margin: 10px;
+            display: inline-block;
+            padding: 10px;
+            float: left;
+        }
+    	.button {
+    		padding: 20px;
+    		background-color: black;
+    		color: white;
+    		display: inline-block;
+    		margin: 5px;
+            cursor: pointer;
+            border: 2px solid black;
+    	}
+    	.button:hover {
+    		background-color: #ff9900;
+    	}
+    	.button.selected {
+    		background-color: #ff0099;
+    	}
+        .triangle .button {
+            background-color: transparent;
+            padding: 0;
+        }
+        .triangle .button:nth-child(odd) {
+            width: 0;
+            height: 0;
+            border-top: 30px solid transparent;
+            border-right: 60px solid #ff0099;
+            border-bottom: 30px solid transparent;
+            border-left: none;
+        }
+        .triangle .button:nth-child(even) {
+            width: 0;
+            height: 0;
+            border-top: 30px solid transparent;
+            border-left: 60px solid #ff0099;
+            border-bottom: 30px solid transparent;
+            border-right: none;
+        }
+        .triangle .button:nth-child(odd):hover {
+            border-right-color: #ff9900;
+        }
+        .triangle .button:nth-child(even):hover {
+            border-left-color: #ff9900;
+        }
+        .triangle .button:nth-child(odd).selected {
+            border-right-color: #000;
+        }
+        .triangle .button:nth-child(even).selected {
+            border-left-color: #000;
+        }
+        .outline .button {
+            background-color: white;
+            border: 2px solid #999;
+            color: #999;
+            font-weight: bold;
+        }
+        .outline .button:hover {
+            background-color: #eee;
+        }
+        .outline .button.selected {
+            background-color: #999;
+            color: #000;
+            border-color: #000;
+        }
+        .shadow .button:hover {
+            box-shadow: 0px 0px 15px #888888;
+            background-color: black;
+        }
+        .shadow .button.selected:hover {
+            box-shadow: 0px 0px 15px #888888;
+            background-color: #ff0099;
+        }
+        .round .button {
+            margin: 5px 0;
+            background-color: white;
+            border: 2px solid #999;
+            color: #999;
+            float: left;
+        }
+        .round .button:nth-child(even) {
+            border-top-right-radius: 15px;
+            border-bottom-right-radius: 15px;
+            border-left-width: 1px;
+        }
+        .round .button:nth-child(odd) {
+            border-top-left-radius: 15px;
+            border-bottom-left-radius: 15px;
+            border-right-width: 1px;
+        }
+        .round .button:hover {
+            background-color: #eee;
+        }
+        .round .button.selected {
+            background-color: rgba(255,127,0,.5);
+            color: #000;
+        }
+        .tab {
+            padding: 10px 30px;
+            position: relative;
+        }
+        .tab .button {
+            border: 2px solid #ddd;
+            background-color: white;
+            color: #666;
+            margin: 5px 0;
+            float: left;
+        }
+        .tab .button:nth-child(odd) {
+            border-left-width: 1px;
+        }
+        .tab .button:nth-child(even) {
+            border-right-width: 1px;
+        }
+        .tab .button.selected {
+            border-bottom: 2px solid white;
+        }
+        .tab .button:hover {
+            background-color: #f7f7f7;
+        }
+        .tab .button.selected:hover {
+            background-color: #fff;
+        }
+        .tab .line {
+            width: 270px;
+            border-top: 2px solid #ddd;
+            position: absolute;
+            top: 78px;
+            left: 0;
+            z-index: -1;
+        }
+        .opacity-animation .button {
+            background-color: #ff9900;
+            opacity: .5;
+            transition: opacity .5s;
+        }
+        .opacity-animation .button:hover {
+            opacity: 1;
+            transition: opacity .5s;
+        }
+        .opacity-animation .button.selected,
+        .opacity-animation .button.selected:hover {
+            background-color: #ff0099;
+            opacity: 1;
+        }
+        .border-radius-animation .button {
+            background-color: white;
+            border-radius: 0;
+            transition: border-radius .5s;
+            color: #000;
+        }
+        .border-radius-animation .button:hover {
+            border-radius: 20px;
+            transition: border-radius .5s;
+        }
+        .border-radius-animation .button.selected {
+            border-radius: 20px;
+            background-color: #eee;
+        }
+        .bg-color-animation .button:hover {
+            -webkit-animation: colorChange 3s infinite;
+            animation: colorChange 3s infinite;
+        }
+        .bg-color-animation .button {
+            background-color: #fff;
+            color: #000;
+        }
+        .bg-color-animation .button.selected,
+        .bg-color-animation .button.selected:hover {
+            color: #fff;
+            background-color: #000;
+            -webkit-animation: none;
+            animation: none;
+        }
+        @-webkit-keyframes colorChange {
+            0% { background-color: #ff0099;}
+            50% { background-color: #ff9900;}
+            100% { background-color: #ff0099;}
+        }
+        @keyframes colorChange {
+            0% { background-color: #ff0099;}
+            50% { background-color: #ff9900;}
+            100% { background-color: #ff0099;}
+        }
+    </style>
+</head>
+<body>
+    <!-- background-color change -->
+	<div class="pair">
+        <div class="button">option 1</div>
+        <div class="button">option 2</div>   
+    </div>
+
+    <!-- simple example with HTML drawing a triangle -->
+    <div class="pair triangle">
+        <div class="button"></div>
+        <div class="button"></div>   
+    </div>
+
+    <!-- changes backround-color on hover, changes color and outline on click -->
+    <div class="pair outline">
+        <div class="button">option 1</div>
+        <div class="button">option 2</div>   
+    </div>
+
+    <!-- adds a box-shadow on hover, changes background-color on click -->
+    <div class="pair shadow">
+        <div class="button">option 1</div>
+        <div class="button">option 2</div>   
+    </div>
+
+    <!-- pill-style buttons, I only changed the background color on this one because
+    of the border-width twiddling to make it look cohesive -->
+    <div class="pair round">
+        <div class="button">option 1</div>
+        <div class="button">option 2</div>   
+    </div>
+
+    <!-- tab-style buttons. this one has an extra div for the line underneath the tabs
+    it also has code to make sure only one is selected at a time, see below -->
+    <div class="pair tab">
+        <div class="line"></div>
+        <div class="button selected">option 1</div>
+        <div class="button">option 2</div>   
+    </div>
+
+    <!-- animates background-color on hover -->
+    <div class="pair opacity-animation">
+        <div class="button">option 1</div>
+        <div class="button">option 2</div>   
+    </div>
+
+    <!-- animates border-radius on hover, stays rounded when selected -->
+    <div class="pair border-radius-animation">
+        <div class="button">option 1</div>
+        <div class="button">option 2</div>   
+    </div>
+
+    <!-- this one has a keyframe animation color-cycling on hover,
+    and a solid color when selected -->
+    <div class="pair bg-color-animation">
+        <div class="button">option 1</div>
+        <div class="button">option 2</div>   
+    </div>
+    <script defer>
+    	var button = d3.selectAll(".button");
+    	button.on("click",function(){
+    		d3.select(this).classed("selected", function(){ 
+    			return !d3.select(this).classed("selected"); 
+    		});
+    	});
+
+        /*
+            some basic code for making sure that only one button can be selected at a time
+            first remove "selected" from all buttons in that group,
+            then add "selected" to the button that was clicked.
+        */
+        d3.selectAll(".tab .button").on("click",function(){
+            d3.select(this.parentNode).selectAll(".button").classed("selected",false);
+            d3.select(this).classed("selected",true);
+        })
+    </script>
+</body>
