@@ -108,7 +108,7 @@
                     var extent = d3.extent(csv, function(d){ return parseFloat(d[dataPoint]); });
                     var radius = d3.scale.sqrt()
                         .domain(extent)
-                        .range([5, 50]);
+                        .range([3, 30]);
 
                     svg.select(".title").text(dataPoint);
 
@@ -116,7 +116,7 @@
                         .pointRadius(function(d) { return radius(d.radius); });
 
                     svg.select(".dotGroup").selectAll("path")
-                        .each(function(d){ d.radius = parseFloat(d.dataset[dataPoint])})
+                        .each(function(d){ d.radius = parseFloat(d.dataset[dataPoint]); })
                         .attr("d", circlePath);
                 }
 

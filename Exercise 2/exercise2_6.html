@@ -19,7 +19,7 @@
         .stateName {
             text-anchor: end;
             font-size: 12px;
-            baseline-shift: -4px;
+            baseline-shift: -6px;
             display: none;
         }
         .label {
@@ -113,7 +113,8 @@
                             radius: parseFloat(d[dataPoint]),
                             dataset: d
                         };
-                    }).attr("fill","#eee");;
+                    }).attr("fill","#eee");
+                    
                     entering.append("text").datum(function(d){
                         var stateName = d.State.replace(/^\s+|\s+$/g, '');
                         return {
@@ -148,16 +149,20 @@
 
                     var dotGroup = svg.select(".dotGroup");
                     dotGroup.selectAll("path")
-                        .each(function(d){ d.radius = parseFloat(d.dataset[dataPoint])})
+                        .each(function(d){ d.radius = parseFloat(d.dataset[dataPoint]); })
                         .transition().duration(1000)
                         .attr("d", circlePath)
                         .attr("fill",function(d){ return colorScale(d.dataset[dataPoint]); })
                         
                     dotGroup.selectAll("path")
                         .on("mouseenter",function(d){
+                            // console.log('hello');
                             d3.select(".barGroup").select("."+getClassName(d.dataset.State))
                                 .classed("selected",true);
-                        }).on("mouseleave",function(d){
+                            d3.select(this).call(animate);
+                        })
+                        // .on("mouseenter",animate);
+                        .on("mouseleave",function(d){
                             d3.select(".barGroup").select("."+getClassName(d.dataset.State))
                                 .classed("selected",false);
                         });
@@ -170,6 +175,22 @@
 
                     updateBarChart();
                 }
+
+                function animate(){
+                    // console.log('hello');
+                    d3.select(this).transition()
+                        .ease("bounce")
+                        .duration(1000)
+                        .("fill",'red')
+                        // .attr("opacity",1.0)
+                        // .each("end",secondanimate);
+                }
+                // function secondanimate(){
+                //     d3.select(this).transition()
+                //         .ease("bounce")
+                //         .duration(1000)
+                //         .attr("opacity",0.5);
+                // }
 
                 function updateBarChart() {
                     var dataMax = d3.max(csv, function(d){ return parseFloat(d[dataPoint]); });
@@ -188,7 +209,9 @@
                             return "translate("+xPos(i)+","+(scaleHeight(0)+padding)+")";
                         });
 
-                    states.attr("class",function(d){ return "stateBar "+getClassName(d.State); })
+                    states.attr("class",function(d){
+                        return "stateBar "+getClassName(d.State);
+                        })
                         .transition().duration(1000)
                         .attr("transform",function(d,i){
                                 return "translate("+xPos(i)+","+(scaleHeight(d[dataPoint])+padding)+")";

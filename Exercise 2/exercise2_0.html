@@ -65,9 +65,15 @@
 
         d3.json("states.json",function(json){
             svg.append("g").attr("class","mapGroup");
-            var states = svg.select(".mapGroup").selectAll(".stateLine").data(json.features);
-            states.enter().append("path").attr("class","stateLine")
+            var states = svg.select(".mapGroup")
+                .selectAll(".stateLine")
+                .data(json.features);
+
+            states.enter()
+                .append("path")
+                .attr("class","stateLine")
                 .attr("d", d3.geo.path());
+                // .attr("projection", d3.geo.orthographic);
 
             function getCentroid(stateName) {
                 var stateData;
@@ -113,19 +119,28 @@
                 }
 
                 function displayData() {
-                    var extent = d3.extent(csv, function(d){ return parseFloat(d[dataPoint]); });
-                    var radius = d3.scale.sqrt()
+
+                    var extent = d3.extent(csv,function(d){
+                        return parseFloat(d[dataPoint]);
+                    });
+                    // console.log(extent);
+                    var radiusScale = d3.scale
+                        .sqrt()
                         .domain(extent)
-                        .range([5, 50]);
-
-                    svg.select(".title").text(dataPoint);
-
+                        .range([3,30]);
                     var circlePath = d3.geo.path()
-                        .pointRadius(function(d) { return radius(d.radius); });
+                        .pointRadius(function(d){
+                            return radiusScale(d.radius);
+                        })
+                    svg.select(".dotGroup")
+                        .selectAll("path")
+                        .each(function(d){
+                            d.radius = parseFloat(d.dataset[dataPoint])
+                        })
+                        .attr("d",circlePath);
+                    svg.select(".title")
+                        .text(dataPoint);
 
-                    svg.select(".dotGroup").selectAll("path")
-                        .each(function(d){ d.radius = parseFloat(d.dataset[dataPoint])})
-                        .attr("d", circlePath);
                 }
 
                 setupData();

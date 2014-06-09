@@ -129,7 +129,7 @@
 
                     var dotGroup = svg.select(".dotGroup");
                     dotGroup.selectAll("path")
-                        .each(function(d){ d.radius = parseFloat(d.dataset[dataPoint])})
+                        .each(function(d){ d.radius = parseFloat(d.dataset[dataPoint]); })
                         .attr("d", circlePath)
                         .attr("fill",function(d){ return colorScale(d.dataset[dataPoint]); });
 

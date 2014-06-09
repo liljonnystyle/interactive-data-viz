@@ -36,14 +36,20 @@
         .stateName {
             text-anchor: end;
             font-size: 12px;
-            baseline-shift: -12px;
+            baseline-shift: -6px;
         }
         .label {
             text-anchor: middle;
             font-size: 12px;
             display: none;
         }
-        .state:hover .label {
+        .state:hover .label,
+        .state.selected .label,
+        .stateBar:hover .label {
+            display: block;
+        }
+        .stateBar:hover .stateName,
+        .stateBar.selected .stateName {
             display: block;
         }
         .state path {
@@ -103,7 +109,10 @@
                         .text(dataPoint);
                     var states = svg.append("g").attr("class","dotGroup")
                         .selectAll(".state").data(csv);
-                    var entering = states.enter().append("g").attr("class","state");
+                    var entering = states.enter().append("g").attr("class","state")
+                        .attr("class",function(d){
+                            return "state " + getClassName(d.State);
+                        });
 
                     var centroid;
                     entering.append("path").datum(function(d) {
@@ -149,9 +158,19 @@
 
                     var dotGroup = svg.select(".dotGroup");
                     dotGroup.selectAll("path")
-                        .each(function(d){ d.radius = parseFloat(d.dataset[dataPoint])})
+                        .each(function(d){ d.radius = parseFloat(d.dataset[dataPoint]); })
                         .attr("d", circlePath)
-                        .attr("fill",function(d){ return colorScale(d.dataset[dataPoint]); });
+                        .attr("fill",function(d){ return colorScale(d.dataset[dataPoint]); })
+                        .on("mouseover",function(d){
+                            d3.select(".dotGroup")
+                                .select("."+d3.select(this).attr("class"))
+                                .classed("selected",true);
+                        })
+                        .on("mouseout",function(d){
+                            d3.select(".dotGroup")
+                                .select("."+d3.select(this).attr("class"))
+                                .classed("selected",false);
+                        });
 
                     dotGroup.selectAll("text")
                         .text(function(d){ return d.dataset[dataPoint]; })
@@ -174,10 +193,23 @@
                     svg.select(".yAxis").call(yAxis);
 
                     var states = svg.select(".barGroup").selectAll(".stateBar").data(csv);
-                    var entering = states.enter().append("g").attr("class","stateBar");
+                    var entering = states.enter().append("g").attr("class","stateBar")
+                        .attr("class",function(d){
+                            return "state " + getClassName(d.State);
+                        });
 
                     states.attr("transform",function(d,i){
                             return "translate("+xPos(i)+","+(scaleHeight(d[dataPoint])+padding)+")";
+                        })
+                        .on("mouseover",function(d){
+                            d3.select(".dotGroup")
+                                .select("."+d3.select(this).attr("class"))
+                                .classed("selected",true);
+                        })
+                        .on("mouseout",function(d){
+                            d3.select(".dotGroup")
+                                .select("."+d3.select(this).attr("class"))
+                                .classed("selected",false);
                         });
 
                     entering.append("rect").attr("width",6);
@@ -204,6 +236,16 @@
                         d3.select(this).select(".label").style("display","none");
                         d3.select(this).select("rect").style("opacity",1);
                     });
+                }
+
+                // regex:
+                // "South Dakota "
+                // "south dakota "
+                // "south dakota"
+                // "south-dakota"
+
+                function getClassName(name){
+                    return name.toLowerCase().replace(/^\s+|\s+$/g, '').replace(/\s+/g, '-');
                 }
 
                 setupData();
